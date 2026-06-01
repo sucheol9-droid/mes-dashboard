@@ -20,15 +20,15 @@ if "summary" not in st.session_state:
     st.session_state.summary = None
 
 # ==========================================
-# 2. API 키 로드 (배포 서버 및 로컬 key.txt 하이브리드 대응)
+# 2. API 키 로드 (배포 서버 Secrets 및 로컬 key.txt 하이브리드 대응)
 # ==========================================
 API_KEY = None
 
-# 만약 Streamlit 클라우드 배포 서버 환경이라면 비밀 금고(Secrets)에서 키를 가져옵니다.
+# 1. 만약 인터넷 배포 서버(Streamlit Cloud) 환경이라면 비밀 금고(Secrets)에서 키를 가져옵니다.
 if "API_KEY" in st.secrets:
     API_KEY = st.secrets["API_KEY"]
 else:
-    # 내 컴퓨터(로컬) 환경이라면 프로젝트 폴더의 key.txt 파일을 읽어옵니다.
+    # 2. 내 컴퓨터(로컬) 환경이라면 프로젝트 폴더의 key.txt 파일을 읽어옵니다.
     KEY_FILE_PATH = "key.txt"
     if not os.path.exists(KEY_FILE_PATH):
         with open(KEY_FILE_PATH, "w", encoding="utf-8") as f:
