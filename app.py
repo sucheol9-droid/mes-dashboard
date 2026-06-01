@@ -20,19 +20,19 @@ if "summary" not in st.session_state:
     st.session_state.summary = None
 
 # ==========================================
-# 2. API 키 로드 (배포 서버 Secrets 및 로컬 key.txt 하이브리드 대응)
+# 2. API 키 하이브리드 로드 (배포 서버 Secrets 및 로컬 key.txt 양방향 대응)
 # ==========================================
 API_KEY = None
 
-# 1. 만약 인터넷 배포 서버(Streamlit Cloud) 환경이라면 비밀 금고(Secrets)에서 키를 가져옵니다.
+# [변경] 1순위: 인터넷 배포 서버(Streamlit Cloud) 환경이라면 비밀 금고(Secrets)에서 키를 가져옵니다.
 if "API_KEY" in st.secrets:
     API_KEY = st.secrets["API_KEY"]
 else:
-    # 2. 내 컴퓨터(로컬) 환경이라면 프로젝트 폴더의 key.txt 파일을 읽어옵니다.
+    # 2순위: 내 컴퓨터(로컬) 환경이라면 프로젝트 폴더의 key.txt 파일을 읽어옵니다.
     KEY_FILE_PATH = "key.txt"
     if not os.path.exists(KEY_FILE_PATH):
         with open(KEY_FILE_PATH, "w", encoding="utf-8") as f:
-            f.write("")  # 파일이 없으면 빈 파일 자동 생성
+            f.write("YOUR_API_KEY_HERE")  # 파일이 없으면 가짜 키로 가이드 파일 자동 생성
 
     with open(KEY_FILE_PATH, "r", encoding="utf-8") as f:
         API_KEY = f.read().strip()
@@ -45,29 +45,27 @@ st.caption("MES 비가동 데이터 기반 | Gemini 2.5 Flash")
 st.divider()
 
 # ==========================================
-# 4. 사이드바 설정 영역 (파일 업로드 방식으로 변경)
+# 4. 사이드바 설정 영역
 # ==========================================
 with st.sidebar:
     st.header("⚙️ 설정")
     
-    # API 키 상태 체크
+    # API 키 상태 체크 (진짜 키 포맷 감지)
     if API_KEY and (API_KEY.startswith("AIzaSy") or API_KEY.startswith("AQ.")):
-        st.success("🔑 key.txt 파일 기반 API 인증 완료")
+        st.success("🔑 API 키 인증 성공 (활성화됨)")
     else:
         st.error("⚠️ API Key 입력이 필요합니다.")
-        st.info(f"프로젝트 폴더에 생성된 **'{KEY_FILE_PATH}'** 파일을 열고 발급받으신 Gemini API Key를 붙여넣은 뒤 저장해 주세요.")
+        st.info("로컬 환경인 경우 'key.txt'에 진짜 키를 입력하거나, 배포 환경인 경우 Streamlit Cloud의 Advanced Settings -> Secrets에 API_KEY를 입력해 주세요.")
         
     st.markdown("---")
     st.subheader("📂 데이터 업로드")
     
-    # [변경] 지정 경로 입력 대신 드래그 앤 드롭 파일 업로더 추가
     uploaded_file = st.file_uploader(
         "MES 비가동 엑셀 파일 선택", 
         type=["xlsx", "xls", "xlsm"],
         help="분석하고자 하는 MES 비가동 엑셀 파일을 여기에 끌어다 놓으세요."
     )
     
-    # 파일이 업로드되었을 때만 분석 시작 버튼 활성화
     load_btn = st.button(
         "🔄 데이터 분석 시작하기", 
         use_container_width=True, 
@@ -86,11 +84,10 @@ with st.sidebar:
 # ==========================================
 if load_btn and uploaded_file is not None:
     if not API_KEY or not (API_KEY.startswith("AIzaSy") or API_KEY.startswith("AQ.")):
-        st.error("key.txt 파일에 올바른 API 키를 먼저 입력하고 저장해 주세요.")
+        st.error("올바른 Gemini API 키가 감지되지 않았습니다. 설정을 다시 확인해 주세요.")
     else:
         try:
             with st.spinner("엑셀 파일 파싱 및 AI 분석 준비 중..."):
-                # [변경] 폴더 경로 대신 업로드된 파일 자체를 함수로 전달
                 df = load_downtime_data(uploaded_file)
                 summary = get_data_summary(df)
                 
